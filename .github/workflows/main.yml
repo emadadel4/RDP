@@ -26,15 +26,33 @@ jobs:
 
     # Wait for ngrok to initialize
     - name: Wait for ngrok to initialize
-      run: Start-Sleep -Seconds 5
+      run: Start-Sleep -Seconds 10
 
-    # Get ngrok endpoint from API
+    # Get ngrok endpoint from API with retries
     - name: Get ngrok endpoint
       run: |
-        $ngrokStatus = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels"
-        $ngrokUrl = $ngrokStatus.tunnels[0].public_url
-        echo "ngrok endpoint: $ngrokUrl"
-        echo "::set-output name=ngrok_url::$ngrokUrl"
+        $maxRetries = 5
+        $retryCount = 0
+        $ngrokUrl = ""
+        while ($retryCount -lt $maxRetries) {
+          try {
+            $ngrokStatus = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels"
+            $ngrokUrl = $ngrokStatus.tunnels[0].public_url
+            echo "ngrok endpoint: $ngrokUrl"
+            break
+          } catch {
+            echo "Attempt $($retryCount + 1) failed, retrying..."
+            Start-Sleep -Seconds 5
+            $retryCount++
+          }
+        }
+
+        if ($ngrokUrl) {
+          echo "::set-output name=ngrok_url::$ngrokUrl"
+        } else {
+          echo "Failed to retrieve ngrok endpoint after $maxRetries attempts."
+          exit 1
+        }
       id: get_ngrok_url
 
     # Send the ngrok endpoint to Telegram
