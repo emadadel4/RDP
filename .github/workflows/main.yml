@@ -24,7 +24,7 @@ jobs:
     - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
     - name: Create Tunnel
       run: |
-        .\ngrok\ngrok.exe tcp 3389 &
+        .\ngrok\ngrok.exe tcp 3389
         Start-Sleep -Seconds 5 # Allow ngrok to start
 
         # Fetch the public ngrok URL
