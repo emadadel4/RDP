@@ -22,10 +22,9 @@ jobs:
     - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
     - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
     - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-    - name: Create Tunnel
-      run: |
-        .\ngrok\ngrok.exe tcp 3389 &
 
+    - name: Get
+      run: | 
         # Fetch the public ngrok URL
         $ngrokUrl = Invoke-RestMethod -Uri http://localhost:4040/api/tunnels | 
                     Select-Object -ExpandProperty tunnels | 
@@ -44,4 +43,8 @@ jobs:
           -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}      
+
+
+    - name: Create Tunnel
+      run: .\ngrok\ngrok.exe tcp 3389
