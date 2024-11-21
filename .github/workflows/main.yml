@@ -9,73 +9,36 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-    - name: Download ngrok
+    - name: Download
       run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-
-    - name: Extract ngrok
+    - name: Extract
       run: Expand-Archive ngrok.zip
-
-    - name: Auth with ngrok
+    - name: Auth
       run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-    # Run ngrok in the background
-    - name: Start ngrok in the background
-      run: Start-Process -NoNewWindow -FilePath .\ngrok\ngrok.exe -ArgumentList "tcp 3389"
-
-    # Wait for ngrok to initialize
-    - name: Wait for ngrok to initialize
-      run: Start-Sleep -Seconds 10
-
-    # Get ngrok endpoint from API with retries
-    - name: Get ngrok endpoint
-      run: |
-        $maxRetries = 5
-        $retryCount = 0
-        $ngrokUrl = ""
-        while ($retryCount -lt $maxRetries) {
-          try {
-            $ngrokStatus = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels"
-            $ngrokUrl = $ngrokStatus.tunnels[0].public_url
-            echo "ngrok endpoint: $ngrokUrl"
-            break
-          } catch {
-            echo "Attempt $($retryCount + 1) failed, retrying..."
-            Start-Sleep -Seconds 5
-            $retryCount++
-          }
-        }
-
-        if ($ngrokUrl) {
-          echo "::set-output name=ngrok_url::$ngrokUrl"
-        } else {
-          echo "Failed to retrieve ngrok endpoint after $maxRetries attempts."
-          exit 1
-        }
-      id: get_ngrok_url
-
-    # Send the ngrok endpoint to Telegram
-    - name: Send ngrok URL to Telegram
-      run: |
-        $ngrokUrl = "${{ steps.get_ngrok_url.outputs.ngrok_url }}"
-        $botToken = "${{ secrets.TELEGRAM_BOT_TOKEN }}"
-        $chatId = "${{ secrets.TELEGRAM_CHAT_ID }}"
-        $message = "The ngrok endpoint is: $ngrokUrl"
-        $uri = "https://api.telegram.org/bot$botToken/sendMessage?chat_id=$chatId&text=$message"
-        Invoke-WebRequest -Uri $uri
-
     - name: Enable TS
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
-
-    - name: Enable Remote Desktop Firewall Rule
-      run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-
-    - name: Set User Authentication
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-
-    - name: Set Local User Password
-      run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-
+      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
     - name: Create Tunnel
-      run: .\ngrok\ngrok.exe tcp 3389
+      run: |
+        $ngrokProcess = Start-Process -FilePath .\ngrok\ngrok.exe -ArgumentList "tcp 3389" -PassThru
+        Start-Sleep -Seconds 5  # Allow time for ngrok to start
+
+        # Fetch the public ngrok URL
+        $ngrokUrl = Invoke-RestMethod -Uri http://localhost:4040/api/tunnels | Select-Object -ExpandProperty tunnels | Select-Object -First 1 | Select-Object -ExpandProperty public_url
+
+        # Send the ngrok URL to Telegram
+        $botToken = ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        $chatId = ${{ secrets.TELEGRAM_CHAT_ID }}
+        $message = "Ngrok Tunnel is ready: $ngrokUrl"
+        
+        Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
+          -Method Post `
+          -ContentType "application/json" `
+          -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
+
+        # Optionally, wait for the process to exit
+        $ngrokProcess.WaitForExit()
