@@ -31,7 +31,7 @@ jobs:
         $ngrokUrl = Invoke-RestMethod -Uri http://localhost:4040/api/tunnels | 
                     Select-Object -ExpandProperty tunnels | 
                     Select-Object -First 1 | 
-                    Select-Object -ExpandProperty public_url
+                    Select-Object -ExpandProperty public_url -ErrorAction SilentlyContinue
 
         # Retrieve secrets from environment
         $botToken = $Env:TELEGRAM_BOT_TOKEN
