@@ -24,4 +24,29 @@ jobs:
     - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
     - name: Create Tunnel
       run: |
-        .\ngrok\ngrok.exe tcp 3389
+        Start-Process -FilePath .\ngrok\ngrok.exe -ArgumentList "tcp 3389" -NoNewWindow
+        Start-Sleep -Seconds 5 # Allow ngrok to start
+
+        # Fetch the public ngrok URL
+        $ngrokUrl = Invoke-RestMethod -Uri http://localhost:4040/api/tunnels | 
+                    Select-Object -ExpandProperty tunnels | 
+                    Select-Object -First 1 | 
+                    Select-Object -ExpandProperty public_url
+
+        # Retrieve secrets from environment
+        $botToken = $Env:TELEGRAM_BOT_TOKEN
+        $chatId = $Env:TELEGRAM_CHAT_ID
+        $message = "Ngrok Tunnel is ready: $ngrokUrl"
+
+        # Send the ngrok URL to Telegram
+        Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
+          -Method Post `
+          -ContentType "application/json" `
+          -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
+
+        # Keep ngrok running
+        Write-Host "Ngrok is running. Press Ctrl+C to exit."
+        while ($true) { Start-Sleep -Seconds 10 }
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
