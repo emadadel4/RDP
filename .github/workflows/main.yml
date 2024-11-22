@@ -40,7 +40,10 @@ jobs:
         $urlWithoutProtocol = $ngrokUrl -replace "^tcp://", ""
         $UrlPort = $urlWithoutProtocol.Split(":")[-1]
         $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
-        $message = "$urlWithoutPort`n`$UrlPort"
+        $message = "
+        $urlWithoutPort
+        $UrlPort
+        "
 
         # Send the ngrok URL to Telegram
         Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
