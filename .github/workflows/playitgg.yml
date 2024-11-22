@@ -17,8 +17,6 @@ jobs:
     - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
     - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
     - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-    - name: Check Playit version
-      run: .\playit.exe --version
     - name: Create Tunnel with Playit.gg
       run: |
         Start-Process -FilePath .\playit.exe -ArgumentList "tunnel", "create", "--protocol", "tcp", "--port", "3389" -NoNewWindow
