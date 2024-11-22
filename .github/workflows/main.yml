@@ -38,9 +38,9 @@ jobs:
         $chatId = $Env:TELEGRAM_CHAT_ID
 
         $urlWithoutProtocol = $ngrokUrl -replace "^tcp://", ""
-        $port = $urlWithoutProtocol.Split(":")[-1]
+        $UrlPort = $urlWithoutProtocol.Split(":")[-1]
         $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
-        $message = "$urlWithoutPort `n` $port"
+        $message = "$urlWithoutPort`n`$UrlPort"
 
         # Send the ngrok URL to Telegram
         Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
