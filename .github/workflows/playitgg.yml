@@ -10,12 +10,15 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Download Playit.gg
-      run: curl -L https://github.com/playit-cloud/playit-cli/releases/download/v1.0.0/playit-windows-amd64.exe --output playit.exe
+      run: |
+        curl -L https://github.com/playit-cloud/playit-cli/releases/download/v1.0.0/playit-windows-amd64.exe --output playit.exe
     - name: Enable TS
       run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
     - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
     - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
     - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+    - name: Check Playit version
+      run: .\playit.exe --version
     - name: Create Tunnel with Playit.gg
       run: |
         Start-Process -FilePath .\playit.exe -ArgumentList "tunnel", "create", "--protocol", "tcp", "--port", "3389" -NoNewWindow
