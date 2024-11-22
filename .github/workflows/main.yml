@@ -41,7 +41,7 @@ jobs:
         $UrlPort = $urlWithoutProtocol.Split(":")[-1]
         $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
         $message = "
-        Ngrok Public URL: $urlWithoutPort:$UrlPort
+        Ngrok Public URL: ${urlWithoutPort}:${UrlPort}
         "
 
         # Get list of active RDP sessions
