@@ -1,61 +1,57 @@
-name: Playit rdp
+name: Playit RDP
 
 on:
   schedule:
-    - cron: "45 * * * *"
-  workflow_dispatch:
+    - cron: "45 * * * *"  # Runs at the 45th minute of every hour
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-    - name: Download Playit Client
+    - name: Download Playit CLI
       run: Invoke-WebRequest https://github.com/playit-cloud/playit-cli/releases/download/v1.0.4/playit.exe -OutFile playit.exe
 
-    - name: Auth
+    - name: Extract Playit
       run: |
-        .\playit.exe login --token $Env:PLAYIT_AUTH_TOKEN
-      env:
-        PLAYIT_AUTH_TOKEN: ${{ secrets.PLAYIT_AUTH_TOKEN }}
+        # No extraction needed since it's a single executable file
+        Write-Host "Playit downloaded and ready to use."
 
     - name: Enable TS
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
-    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+      run: |
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+        Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
 
     - name: Create Tunnel
       run: |
-        Start-Process -FilePath .\playit.exe -ArgumentList "tunnel create --service=remote-desktop" -NoNewWindow
-        Start-Sleep -Seconds 5 # Allow Playit to start
+        # Start Playit without authentication token
+        Start-Process -FilePath .\playit.exe -ArgumentList "tcp 3389" -NoNewWindow
+        Start-Sleep -Seconds 5  # Allow Playit to start the tunnel
 
         # Fetch the public Playit URL
-        $playitUrl = Invoke-RestMethod -Uri http://localhost:3000/api/tunnels | 
+        $playitUrl = Invoke-RestMethod -Uri http://localhost:4040/api/tunnels | 
                      Select-Object -ExpandProperty tunnels | 
                      Select-Object -First 1 | 
                      Select-Object -ExpandProperty public_url -ErrorAction SilentlyContinue
 
-        # Retrieve secrets from environment
+        # Send the Playit URL to Telegram (if needed)
         $botToken = $Env:TELEGRAM_BOT_TOKEN
         $chatId = $Env:TELEGRAM_CHAT_ID
+        $message = "Your public Playit URL is: $playitUrl"
 
-        $urlWithoutProtocol = $playitUrl -replace "^tcp://", ""
-        $UrlPort = $urlWithoutProtocol.Split(":")[-1]
-        $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
-        $message = "
-        $urlWithoutPort
-        $UrlPort
-        "
-
-        # Send the Playit URL to Telegram
+        # Send the URL to Telegram
         Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
           -Method Post `
           -ContentType "application/json" `
           -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
 
         # Keep Playit running
-        Write-Host "Playit is running. Press Ctrl+C to exit."
+        Write-Host "Playit tunnel is running. Press Ctrl+C to exit."
         while ($true) { Start-Sleep -Seconds 10 }
-      env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
