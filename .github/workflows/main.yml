@@ -41,11 +41,18 @@ jobs:
         $UrlPort = $urlWithoutProtocol.Split(":")[-1]
         $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
         $message = "
-        $urlWithoutPort
-        $UrlPort
+        Ngrok Public URL: $urlWithoutPort:$UrlPort
         "
 
-        # Send the ngrok URL to Telegram
+        # Get list of active RDP sessions
+        $rdpSessions = query user | Select-String "Active" | ForEach-Object { $_.Line.Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries)[0] }
+        if ($rdpSessions) {
+          $message += "`nActive RDP Sessions:`n$($rdpSessions -join "`n")"
+        } else {
+          $message += "`nNo active RDP sessions found."
+        }
+
+        # Send the ngrok URL and active session list to Telegram
         Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
           -Method Post `
           -ContentType "application/json" `
