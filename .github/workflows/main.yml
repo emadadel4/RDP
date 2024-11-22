@@ -36,7 +36,12 @@ jobs:
         # Retrieve secrets from environment
         $botToken = $Env:TELEGRAM_BOT_TOKEN
         $chatId = $Env:TELEGRAM_CHAT_ID
-        $message = "Ngrok Tunnel is ready: $ngrokUrl`nUsername: runneradmin`npassword: P@ssw0rd! "
+
+        $urlWithoutProtocol = $ngrokUrl -replace "^tcp://", ""
+        $port = $urlWithoutProtocol.Split(":")[-1]
+        $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
+
+        $message = "$urlWithoutPort`n`$port"
 
         # Send the ngrok URL to Telegram
         Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
