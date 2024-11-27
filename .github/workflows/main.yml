@@ -35,7 +35,8 @@ jobs:
 
         # Retrieve secrets from environment
         $botToken = $Env:TELEGRAM_BOT_TOKEN
-        $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() }
+        $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() } 
+        Write-Host "Chat IDs: $($chatIds -join ',')"
 
         $urlWithoutProtocol = $ngrokUrl -replace "^tcp://", ""
         $UrlPort = $urlWithoutProtocol.Split(":")[-1]
@@ -53,14 +54,19 @@ jobs:
           $message += "`nNo active RDP sessions found."
         }
 
-        # Send the ngrok URL and active session list to Telegram
-
-        foreach ($chatId in $chatIds) {
-
-          Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
-            -Method Post `
-            -ContentType "application/json" `
-            -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
+        # Send message to each chat_id
+        foreach ($chatId in $chatIds)
+        {
+            Write-Host "Sending message to chat_id: $chatId"
+            try {
+                Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
+                    -Method Post `
+                    -ContentType "application/json" `
+                    -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
+            } catch {
+                Write-Host "Failed to send message to chat_id: $chatId"
+                Write-Host $_.Exception.Message
+            }
         }
 
         # Keep ngrok running
