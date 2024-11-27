@@ -35,7 +35,7 @@ jobs:
 
         # Retrieve secrets from environment
         $botToken = $Env:TELEGRAM_BOT_TOKEN
-        $chatIds = $Env:TELEGRAM_CHAT_IDS -split ","
+        $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() }
 
         $urlWithoutProtocol = $ngrokUrl -replace "^tcp://", ""
         $UrlPort = $urlWithoutProtocol.Split(":")[-1]
