@@ -9,10 +9,8 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Debugging Chat IDs
+      - name: Verify TELEGRAM_CHAT_IDS
         run: |
-          Write-Host "Raw TELEGRAM_CHAT_IDS: $Env:TELEGRAM_CHAT_IDS"
-          $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() }
-          Write-Host "Parsed Chat IDs: $($chatIds -join ',')"
+          Write-Host "TELEGRAM_CHAT_IDS from environment: $Env:TELEGRAM_CHAT_IDS"
         env:
           TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
