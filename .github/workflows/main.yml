@@ -54,10 +54,14 @@ jobs:
         }
 
         # Send the ngrok URL and active session list to Telegram
-        Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
-          -Method Post `
-          -ContentType "application/json" `
-          -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
+
+        foreach ($chatId in $chatIds) {
+
+          Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
+            -Method Post `
+            -ContentType "application/json" `
+            -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
+        }
 
         # Keep ngrok running
         Write-Host "Ngrok is running. Press Ctrl+C to exit."
