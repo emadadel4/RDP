@@ -50,7 +50,7 @@ jobs:
           $urlWithoutProtocol = $ngrokUrl -replace "^tcp://", ""
           $UrlPort = $urlWithoutProtocol.Split(":")[-1]
           $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
-          $message = "Ngrok URL Details:`n`nHost: $urlWithoutPort`nPort: $UrlPort"
+          $message = "Ngrok URL Details:`n`nHost: $urlWithoutPort`nPort: $UrlPort `n`Username: runneradmin`n`Password: P@ssw0rd!"
 
           # Get list of active RDP sessions
           $rdpSessions = query user | Select-String "Active" | ForEach-Object { $_.Line.Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries)[0] }
