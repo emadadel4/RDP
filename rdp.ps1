@@ -99,12 +99,7 @@ $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
 # $message = "Ngrok URL Details:`n`nHost: $urlWithoutPort`nPort: $UrlPort `n`Username: runneradmin`n`Password: P@ssw0rd!"
 
 
-Send-RdpFileToTelegram `
-    -RemoteComputer $ngrokUrl `
-    -Username "runneradmin" `
-    -Password "P@assw0rd!" `
-    -TelegramBotToken $Env:TELEGRAM_BOT_TOKEN `
-    -ChatID $Env:TELEGRAM_CHAT_ID
+
 
 # # Get list of active RDP sessions
 # $rdpSessions = query user | Select-String "Active" | ForEach-Object { $_.Line.Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries)[0] }
@@ -117,12 +112,17 @@ Send-RdpFileToTelegram `
 # Send message to Telegram
 $botToken = $Env:TELEGRAM_BOT_TOKEN
 $chatIds = $Env:TELEGRAM_CHAT_ID -split "," | ForEach-Object { $_.Trim() }
+
 foreach ($chatId in $chatIds) {
     try {
-        Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
-            -Method Post `
-            -ContentType "application/json" `
-            -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
+
+        Send-RdpFileToTelegram `
+        -RemoteComputer $ngrokUrl `
+        -Username "runneradmin" `
+        -Password "P@assw0rd!" `
+        -TelegramBotToken $botToken `
+        -ChatID $chatId
+
     } catch {
         Write-Host "Failed to send message to chat_id: $chatId"
         Write-Host $_.Exception.Message
