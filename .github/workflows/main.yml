@@ -15,6 +15,6 @@ jobs:
 
     - name: Run Ngrok Tunnel Script
       run: |
-        powershell.exe -ExecutionPolicy Bypass -File ./ngrok-telegram.ps1
+        powershell.exe -ExecutionPolicy Bypass -File .\rdp.ps1
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
