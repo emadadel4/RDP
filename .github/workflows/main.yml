@@ -1,9 +1,9 @@
 name: Ngrok and Notify Telegram
 
 on:
-  schedule:
-    - cron: "45 * * * *"
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   rdp-tunnel:
@@ -15,8 +15,6 @@ jobs:
 
     - name: Run Ngrok Tunnel Script
       run: |
-        powershell.exe -ExecutionPolicy Bypass -File .\rdp.ps1
+        powershell.exe -ExecutionPolicy Bypass -File ./ngrok-telegram.ps1
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_ID }}
