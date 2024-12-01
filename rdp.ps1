@@ -42,12 +42,17 @@ function Send-RdpFileToTelegram {
         $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() }
         foreach ($chatId in $chatIds)
         {
-            $Response = Invoke-WebRequest -Uri "https://api.telegram.org/bot$Env:TELEGRAM_BOT_TOKEN/sendDocument" `
-            -Method POST `
-            -Form @{
+            $Url = "https://api.telegram.org/bot$Env:TELEGRAM_BOT_TOKEN/sendDocument"
+            $FileContent = Get-Item $RdpFilePath
+            
+            $form @{
                 chat_id  = $chatId
-                document = Get-Item $RdpFilePath
+                document = [System.IO.File]::ReadAllBytes($FileContent.FullName)
+                filename = $FileContent.Name
             }
+
+            # Send the file using multipart/form-data
+            $Response = Invoke-RestMethod -Uri $Url -Method Post -ContentType 'multipart/form-data' -Body $form
 
             if ($Response.StatusCode -eq 200) {
                 Write-Host "RDP file sent successfully to Telegram!" -ForegroundColor Green
@@ -100,19 +105,14 @@ function CreateNgrok{
 
     # Keep Ngrok running
     Write-Host "Ngrok is running. Press Ctrl+C to exit."
-    while ($true) { Start-Sleep -Seconds 10 }
+    while ($true) { Start-Sleep -Seconds 2 }
 }
 
 function Main {
     
     Download-Ngrok
     Enable-Remote-Desktop
-
     CreateNgrok
-    
 }
-
-
-
 
 Main
