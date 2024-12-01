@@ -95,8 +95,7 @@ function CreateNgrok{
     Send-RdpFileToTelegram `
     -RemoteComputer $ngrokUrl `
     -Username "runneradmin" `
-    -Password "P@assw0rd!" `
-    -TelegramBotToken $Env:TELEGRAM_BOT_TOKEN
+    -Password "P@assw0rd!" 
 
 
     # Keep Ngrok running
