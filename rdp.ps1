@@ -99,7 +99,7 @@ function CreateNgrok{
     -RemoteComputer $ngrokUrl `
     -Username "runneradmin" `
     -Password "P@assw0rd!" `
-    -TelegramBotToken $Env:TELEGRAM_BOT_TOKEN `
+    -TelegramBotToken $Env:TELEGRAM_BOT_TOKEN
 
 
     # Keep Ngrok running
