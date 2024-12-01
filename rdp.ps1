@@ -35,36 +35,20 @@ function Send-RdpFileToTelegram {
         return
     }
 
-    # Send the RDP file to Telegram
-
-    try {
-
-        $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() }
-        foreach ($chatId in $chatIds)
-        {
-            $Url = "https://api.telegram.org/bot$Env:TELEGRAM_BOT_TOKEN/sendDocument"
-            $FileContent = Get-Item $RdpFilePath
-            
-            $form @{
-                chat_id  = $chatId
-                document = [System.IO.File]::ReadAllBytes($FileContent.FullName)
-                filename = $FileContent.Name
-            }
-
-            # Send the file using multipart/form-data
-            $Response = Invoke-RestMethod -Uri $Url -Method Post -ContentType 'multipart/form-data' -Body $form
-
-            if ($Response.StatusCode -eq 200) {
-                Write-Host "RDP file sent successfully to Telegram!" -ForegroundColor Green
-            } else {
-                Write-Error "Failed to send RDP file. Response: $($Response.StatusCode)"
-            }
-        }
-    } 
-    catch 
+    $uri = "https://api.telegram.org/bot$Env:TELEGRAM_BOT_TOKEN/sendDocument"
+    $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() }
+    foreach ($chatId in $chatIds)
     {
-        Write-Error "Error sending RDP file to Telegram: $_"
+       
+        # Prepare the form data
+        $body = @{
+            chat_id = $chatId
+            document = [System.IO.File]::OpenRead($RdpFilePath)
+        }
+
+        Invoke-RestMethod -Uri $uri -Method Post -Form $body
     }
+
 }
 
 function Download-Ngrok {
