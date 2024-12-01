@@ -1,4 +1,4 @@
-name: CI
+name: RDP
 
 on:
   schedule:
@@ -9,49 +9,74 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-    - name: Download
-      run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-    - name: Extract
-      run: Expand-Archive ngrok.zip
-    - name: Auth
-      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
-      env:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-    - name: Enable TS
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
-    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-    - name: Create Tunnel
-      run: |
-        Start-Process -FilePath .\ngrok\ngrok.exe -ArgumentList "tcp 3389" -NoNewWindow
-        Start-Sleep -Seconds 5 # Allow ngrok to start
+      - name: Download Ngrok
+        run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
 
-        # Fetch the public ngrok URL
-        $ngrokUrl = Invoke-RestMethod -Uri http://localhost:4040/api/tunnels | 
-                    Select-Object -ExpandProperty tunnels | 
-                    Select-Object -First 1 | 
-                    Select-Object -ExpandProperty public_url -ErrorAction SilentlyContinue
+      - name: Extract Ngrok
+        run: Expand-Archive ngrok.zip
 
-        # Retrieve secrets from environment
-        $botToken = $Env:TELEGRAM_BOT_TOKEN
-        $chatId = $Env:TELEGRAM_CHAT_ID
+      - name: Authenticate Ngrok
+        run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
-        $urlWithoutProtocol = $ngrokUrl -replace "^tcp://", ""
-        $port = $urlWithoutProtocol.Split(":")[-1]
-        $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
+      - name: Enable Remote Desktop
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
 
-        $message = "$urlWithoutPort`n`$port"
+      - name: Set Admin Password
+        run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
 
-        # Send the ngrok URL to Telegram
-        Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
-          -Method Post `
-          -ContentType "application/json" `
-          -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
+      - name: Create Ngrok Tunnel and Notify Telegram
+        run: |
+          # Start Ngrok process
+          Start-Process -FilePath .\ngrok\ngrok.exe -ArgumentList "tcp 3389" -NoNewWindow
+          Start-Sleep -Seconds 1 # Allow Ngrok to start
 
-        # Keep ngrok running
-        Write-Host "Ngrok is running. Press Ctrl+C to exit."
-        while ($true) { Start-Sleep -Seconds 10 }
-      env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Fetch the public Ngrok URL
+          $ngrokUrl = Invoke-RestMethod -Uri http://localhost:4040/api/tunnels | 
+                      Select-Object -ExpandProperty tunnels | 
+                      Select-Object -First 1 | 
+                      Select-Object -ExpandProperty public_url -ErrorAction SilentlyContinue
+
+          # Retrieve secrets from environment
+          $botToken = $Env:TELEGRAM_BOT_TOKEN
+          $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() }
+          Write-Host "Chat IDs: $($chatIds -join ',')"
+
+          # Prepare message details
+          $urlWithoutProtocol = $ngrokUrl -replace "^tcp://", ""
+          $UrlPort = $urlWithoutProtocol.Split(":")[-1]
+          $urlWithoutPort = $urlWithoutProtocol -replace ":\d+$", ""
+          $message = "Ngrok URL Details:`n`nHost: $urlWithoutPort`nPort: $UrlPort `n`Username: runneradmin`n`Password: P@ssw0rd!"
+
+          # Get list of active RDP sessions
+          $rdpSessions = query user | Select-String "Active" | ForEach-Object { $_.Line.Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries)[0] }
+          if ($rdpSessions) {
+            $message += "`n`nActive RDP Sessions:`n$($rdpSessions -join "`n")"
+          } else {
+            $message += "`n`nNo active RDP sessions found."
+          }
+
+          # Send message to each chat_id
+          foreach ($chatId in $chatIds) {
+              Write-Host "Sending message to chat_id: $chatId"
+              try {
+                  Invoke-RestMethod -Uri "https://api.telegram.org/bot$botToken/sendMessage" `
+                      -Method Post `
+                      -ContentType "application/json" `
+                      -Body (@{chat_id=$chatId; text=$message} | ConvertTo-Json)
+              } catch {
+                  Write-Host "Failed to send message to chat_id: $chatId"
+                  Write-Host $_.Exception.Message
+              }
+          }
+
+          # Keep Ngrok running
+          Write-Host "Ngrok is running. Press Ctrl+C to exit."
+          while ($true) { Start-Sleep -Seconds 10 }
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_ID }}
