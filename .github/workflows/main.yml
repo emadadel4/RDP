@@ -3,7 +3,7 @@ name: RDP
 on:
   schedule:
     - cron: "40 * * * *"
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   rdp-tunnel:
