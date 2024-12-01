@@ -2,8 +2,8 @@ name: RDP
 
 on:
   schedule:
-    - cron: "* * * * *"
-  workflow_dispatch:
+    - cron: "45 * * * *"
+  workflow_dispatch: 
 
 jobs:
   rdp-tunnel:
@@ -20,4 +20,3 @@ jobs:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_ID }}
-
