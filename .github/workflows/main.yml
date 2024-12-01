@@ -18,3 +18,6 @@ jobs:
         powershell.exe -ExecutionPolicy Bypass -File .\rdp.ps1
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_ID }}
+
