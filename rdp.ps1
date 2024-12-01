@@ -35,18 +35,35 @@ function Send-RdpFileToTelegram {
         return
     }
 
-    $uri = "https://api.telegram.org/bot$Env:TELEGRAM_BOT_TOKEN/sendDocument"
     $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() }
-    foreach ($chatId in $chatIds)
-    {
-       
-        # Prepare the form data
-        $body = @{
-            chat_id = $chatId
-            document = [System.IO.File]::OpenRead($RdpFilePath)
-        }
+    $uri = "https://api.telegram.org/bot$Env:TELEGRAM_BOT_TOKEN/sendDocument"
 
-        Invoke-RestMethod -Uri $uri -Method Post -Form $body
+    foreach ($chatId in $chatIds) {
+        # Create a new HttpClient instance
+        $httpClient = New-Object System.Net.Http.HttpClient
+    
+        # Create MultipartFormDataContent
+        $formContent = New-Object System.Net.Http.MultipartFormDataContent
+    
+        # Add the chat_id and document fields to the form data
+        $formContent.Add((New-Object System.Net.Http.StringContent($chatId)), "chat_id")
+        $fileStream = [System.IO.File]::OpenRead($RdpFilePath)
+        $fileContent = New-Object System.Net.Http.StreamContent($fileStream)
+        $fileContent.Headers.Add("Content-Type", "application/octet-stream")
+        $formContent.Add($fileContent, "document", [System.IO.Path]::GetFileName($RdpFilePath))
+    
+        # Send the request
+        $response = $httpClient.PostAsync($uri, $formContent).Result
+    
+        # Check response status
+        if ($response.IsSuccessStatusCode) {
+            Write-Host "File sent successfully to $chatId"
+        } else {
+            Write-Host "Failed to send file to $chatId"
+        }
+    
+        # Dispose of the HttpClient instance
+        $httpClient.Dispose()
     }
 
 }
