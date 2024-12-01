@@ -9,7 +9,7 @@ function Send-RdpFileToTelegram {
         [Parameter(Mandatory = $true)]
         [string]$Password,            
 
-        [string]$RdpFilePath = "$env:USERPROFILE\Desktop\BatmanCave_RDP.rdp"  # Default RDP file path
+        [string]$RdpFilePath = "$env:USERPROFILE\Desktop\BatmanCave_RDP.ps1"  # Default RDP file path
     )
 
     # Create the RDP file content
