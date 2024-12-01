@@ -1,16 +1,13 @@
 function Send-RdpFileToTelegram {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$RemoteComputer,        # Remote desktop address
+        [string]$RemoteComputer,       
 
         [Parameter(Mandatory = $true)]
-        [string]$Username,             # Remote username
+        [string]$Username,             
 
         [Parameter(Mandatory = $true)]
-        [string]$Password,             # Remote password
-
-        [Parameter(Mandatory = $true)]
-        [string]$TelegramBotToken,     # Telegram Bot API token
+        [string]$Password,            
 
         [string]$RdpFilePath = "$env:USERPROFILE\Desktop\AutoConnect.rdp"  # Default RDP file path
     )
@@ -45,7 +42,7 @@ function Send-RdpFileToTelegram {
         $chatIds = $Env:TELEGRAM_CHAT_IDS -split "," | ForEach-Object { $_.Trim() }
         foreach ($chatId in $chatIds)
         {
-            $Response = Invoke-WebRequest -Uri "https://api.telegram.org/bot$TelegramBotToken/sendDocument" `
+            $Response = Invoke-WebRequest -Uri "https://api.telegram.org/bot$Env:TELEGRAM_BOT_TOKEN/sendDocument" `
             -Method POST `
             -Form @{
                 chat_id  = $chatId
