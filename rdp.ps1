@@ -13,17 +13,17 @@ function Send-RdpFileToTelegram {
     )
 
     # Create the RDP file content
-    $RdpContent = @"
-    smart sizing:i:1
-    full address:s:$RemoteComputer
-    username:s:$Username
-    enablecredsspsupport:i:1
-    prompt for credentials:i:0
-    compression:i:1
-    networkautodetect:i:0
-    bandwidthautodetect:i:0
-    connection type:i:1
-    password 51:b:$([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($Password)))
+$RdpContent = @"
+smart sizing:i:1
+full address:s:$RemoteComputer
+username:s:$Username
+enablecredsspsupport:i:1
+prompt for credentials:i:0
+compression:i:1
+networkautodetect:i:0
+bandwidthautodetect:i:0
+connection type:i:1
+loadbalanceinfo:s:
 "@
 
     # Save the RDP file
