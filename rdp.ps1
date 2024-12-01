@@ -9,7 +9,7 @@ function Send-RdpFileToTelegram {
         [Parameter(Mandatory = $true)]
         [string]$Password,            
 
-        [string]$RdpFilePath = "$env:USERPROFILE\Desktop\AutoConnect.rdp"  # Default RDP file path
+        [string]$RdpFilePath = "$env:USERPROFILE\Desktop\BatmanCave_RDP.rdp"  # Default RDP file path
     )
 
     # Create the RDP file content
@@ -98,15 +98,18 @@ function CreateNgrok{
     Select-Object -First 1 | 
     Select-Object -ExpandProperty public_url -ErrorAction SilentlyContinue
 
+    $urlWithoutProtocol = $ngrokUrl -replace "^tcp://", ""
+    $UrlPort = $urlWithoutProtocol.Split(":")[-1]
+
     Send-RdpFileToTelegram `
-    -RemoteComputer $ngrokUrl `
+    -RemoteComputer $urlWithoutProtocol `
     -Username "runneradmin" `
     -Password "P@assw0rd!" 
 
 
     # Keep Ngrok running
     Write-Host "Ngrok is running. Press Ctrl+C to exit."
-    while ($true) { Start-Sleep -Seconds 2 }
+    while ($true) { Start-Sleep -Seconds 10 }
 }
 
 function Main {
