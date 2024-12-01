@@ -1,9 +1,9 @@
-name: Ngrok and Notify Telegram
+name: RDP
 
 on:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: "45 * * * *"
+  workflow_dispatch:
 
 jobs:
   rdp-tunnel:
