@@ -14,8 +14,21 @@ function Send-RdpFileToTelegram {
 
     # Create the RDP file content
 $RdpContent = @"
+# Parameters
+$IP = $RemoteComputer  
+$Username = "runneradmin"                
+$Password = "P@ssw0rd!"
+$RdpFilePath = "$env:USERPROFILE\Desktop\AutoConnect.rdp"  # Path to save .rdp file
+
+# Step 1: Save credentials using cmdkey
+Write-Host "Saving credentials for $RemoteComputer..." -ForegroundColor Cyan
+cmdkey /add:2.tcp.ngrok.io /user:$Username /pass:$Password
+
+# Step 2: Generate an .rdp file for the connection
+Write-Host "Creating RDP configuration file..." -ForegroundColor Cyan
+@"
 smart sizing:i:1
-full address:s:$RemoteComputer
+full address:s:$IP
 username:s:$Username
 enablecredsspsupport:i:1
 prompt for credentials:i:0
@@ -23,7 +36,15 @@ compression:i:1
 networkautodetect:i:0
 bandwidthautodetect:i:0
 connection type:i:1
+full address:s:$RemoteComputer
+username:s:$Username
+enablecredsspsupport:i:1
 loadbalanceinfo:s:
+"@ | Out-File -Encoding UTF8 -FilePath $RdpFilePath
+
+Write-Host "Connecting to $RemoteComputer using saved credentials..." -ForegroundColor Green
+Start-Process -FilePath $RdpFilePath
+
 "@
 
     # Save the RDP file
